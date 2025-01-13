@@ -60,7 +60,26 @@ app.post('/createOrder', (req, res) => {
                 productId,
                 message: `Requested quantity (${qty}) exceeds available stock (${product.qty})`
             });
-        } else {
+        }
+    });
+
+    if (productNotFound.length) {
+        return res.status(400).json(
+            {
+                message: "Product not found.",
+                productNotFound
+            });
+    } else if (exceeds.length) {
+        return res.status(400).json(
+            {
+                message: "Exceeds available stock.",
+                exceeds
+            });
+    } else {
+        orders.forEach(order => {
+            const [productId, qty] = order.split('-').map(Number);
+            const product = products.find(p => p.id === productId);
+
             const total = product.price * qty;
             grandTotal += total;
 
@@ -71,10 +90,14 @@ app.post('/createOrder', (req, res) => {
             });
 
             product.qty -= qty;
-        }
-    });
+        });
 
-    res.json({ orderResults, grandTotal, productNotFound, qtyExceeds: exceeds });
+        return res.status(201).json(
+            {
+                message: "Order created.",
+                orderResults, grandTotal
+            });
+    }
 });
 
 app.listen(PORT, () => {
